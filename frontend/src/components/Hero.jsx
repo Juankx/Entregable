@@ -37,7 +37,7 @@ const Hero = () => {
         <div className="space-y-6 px-4 md:px-8">
           {/* Título Principal */}
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-wider drop-shadow-2xl">
-            Innovation Business
+            Innovation Bussines
           </h1>
 
           {/* Subtítulo */}

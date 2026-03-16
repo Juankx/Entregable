@@ -19,7 +19,7 @@ export const paquetesInicio = [
   { id: 18, name: "Turquía - Bursa & Egipto", description: "Descubre Turquía y Egipto.", image: "/images/paquetes/TurquiaBursaEgipto.jpeg", price: "Desde $2,499", duration: "12 días / 11 noches", group: "2-15 personas", rating: 4.9, type: "Internacional" }
 ];
 
-const WHATSAPP_NUMERO = '593999222210';
+const WHATSAPP_NUMERO = '593981473845';
 const MSJ_MAS_INFO = 'Me podrían ayudar con más información de este paquete.';
 
 export function openWhatsAppMasInfo(packageName) {

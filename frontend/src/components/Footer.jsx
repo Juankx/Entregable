@@ -4,7 +4,7 @@ import { Phone, Mail, MapPin, Facebook, Instagram, MessageCircle, Globe } from '
 
 const Footer = () => {
   const openWhatsApp = () => {
-    window.open('https://wa.me/0999845693?text=Hola! Me gustaría obtener información sobre los servicios de Innovation Business.', '_blank')
+    window.open('https://wa.me/593981473845?text=Hola! Me gustaría obtener información sobre los servicios de Innovation Bussines.', '_blank')
   }
 
   const openFacebook = () => {
@@ -25,7 +25,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
-            <h3 className="text-2xl font-bold mb-6 text-amber-100">Innovation Business</h3>
+            <h3 className="text-2xl font-bold mb-6 text-amber-100">Innovation Bussines</h3>
             <p className="text-amber-50 mb-6 leading-relaxed">
               Somos tu compañía de confianza para crear experiencias de viaje únicas e inolvidables. 
               Desde destinos nacionales hasta aventuras internacionales, nos encargamos de cada detalle 
@@ -36,7 +36,7 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Phone size={18} className="text-amber-300" />
-                <span className="text-amber-100">0999845693</span>
+                <span className="text-amber-100">+593 98 147 3845</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail size={18} className="text-amber-300" />
@@ -148,7 +148,7 @@ const Footer = () => {
         <div className="border-t border-amber-700 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-amber-100">
             <div className="text-center md:text-left">
-              <p>&copy; 2024 Innovation Business. Todos los derechos reservados.</p>
+              <p>&copy; 2024 Innovation Bussines. Todos los derechos reservados.</p>
             </div>
             <div className="flex gap-6 text-center">
               <a href="#" className="hover:text-amber-200 transition-colors duration-300">

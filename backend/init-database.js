@@ -60,22 +60,22 @@ async function initDatabase() {
     await client.query(schema);
     console.log("✅ Tablas creadas correctamente");
 
-    // Generar hash para 'admin123'
+    // Generar hash para 'admin123' (contraseña única para todos los usuarios de desarrollo/producción inicial)
     console.log("🔐 Generando hash bcryptjs para contraseñas...");
     const hashedPassword = await bcryptjs.hash('admin123', 10);
     console.log("✅ Hash generado");
 
-    // Insertar usuarios con el hash generado
+    // Usuarios CRM: cada uno redirige a su dashboard correspondiente tras login (ver AuthContext)
     const usuarios = [
-      { nombre: 'Administrador', email: 'admin@crm.com', rol: 'admin' },
-      { nombre: 'Cobranzas', email: 'cobranzas@crm.com', rol: 'cobranzas' },
-      { nombre: 'Contratos', email: 'contratos@crm.com', rol: 'contratos' },
-      { nombre: 'Atención Cliente', email: 'atencion@crm.com', rol: 'atencion' },
-      { nombre: 'Postventa', email: 'postventa@crm.com', rol: 'postventa' },
-      { nombre: 'Cliente Blue', email: 'cliente@crm.com', rol: 'blue' },
-      { nombre: 'Cliente Blue (alias)', email: 'clientes@crm.com', rol: 'blue' },
-      { nombre: 'Cliente Gold', email: 'clienteib1@crm.com', rol: 'gold' },
-      { nombre: 'Cliente Black', email: 'clienteib2@crm.com', rol: 'black' }
+      { nombre: 'Administrador', email: 'admin@crm.com', rol: 'admin' },           // → /admin
+      { nombre: 'Contratos', email: 'contratos@crm.com', rol: 'contratos' },        // → /dashboard-contratos
+      { nombre: 'Postventa', email: 'postventa@crm.com', rol: 'postventa' },        // → /dashboard-postventa
+      { nombre: 'Cobranzas', email: 'cobranzas@crm.com', rol: 'cobranzas' },       // → /dashboard-cobranzas
+      { nombre: 'Atención Cliente', email: 'atencion@crm.com', rol: 'atencion' },  // → /dashboard-atencion
+      { nombre: 'Cliente Blue', email: 'cliente@crm.com', rol: 'blue' },             // → /cliente (Dashboard Blue)
+      { nombre: 'Cliente Gold', email: 'clienteib1@crm.com', rol: 'gold' },         // → /cliente-ib1 (Dashboard Gold)
+      { nombre: 'Cliente Black', email: 'clienteib2@crm.com', rol: 'black' },        // → /cliente-black (Dashboard Black)
+      { nombre: 'Cliente Blue (alias)', email: 'clientes@crm.com', rol: 'blue' },   // alias → /cliente
     ];
 
     for (const usuario of usuarios) {
@@ -139,14 +139,15 @@ async function initDatabase() {
     console.log("✅ Actividades insertadas correctamente");
 
     console.log("");
-    console.log("📝 Usuarios de desarrollo (contraseña: admin123):");
-    console.log("   admin@crm.com (admin)");
-    console.log(
-      "   cobranzas@crm.com, contratos@crm.com, atencion@crm.com, postventa@crm.com",
-    );
-    console.log(
-      "   cliente@crm.com (Blue), clienteib1@crm.com (Gold), clienteib2@crm.com (Black)",
-    );
+    console.log("📝 Credenciales CRM (contraseña: admin123) → Dashboard:");
+    console.log("   contratos@crm.com   → Dashboard Contratos");
+    console.log("   postventa@crm.com   → Dashboard Postventa");
+    console.log("   cobranzas@crm.com   → Dashboard Cobranzas");
+    console.log("   atencion@crm.com    → Dashboard Atención al cliente");
+    console.log("   cliente@crm.com     → Dashboard Cliente Blue");
+    console.log("   clienteib1@crm.com  → Dashboard Cliente Gold");
+    console.log("   clienteib2@crm.com  → Dashboard Cliente Black");
+    console.log("   admin@crm.com       → Dashboard Admin");
     console.log("");
     console.log("⚠️  IMPORTANTE: Cambia las contraseñas en producción");
 

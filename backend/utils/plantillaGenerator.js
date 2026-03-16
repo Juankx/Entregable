@@ -185,7 +185,7 @@ class PlantillaContratoGenerator {
 
     if (numero === 0) return 'CERO DÓLARES AMERICANOS';
 
-    const entero = Math.floor(numero);
+    let entero = Math.floor(numero);
     const decimal = Math.round((numero - entero) * 100);
 
     let resultado = '';

@@ -89,7 +89,7 @@ const HomePageDorada = () => {
 
         <div className="relative z-10 text-center px-6">
           <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Innovation Business
+            Innovation Bussines
           </h1>
           <p className="text-2xl md:text-3xl text-amber-100 mb-8 drop-shadow">
             Descubre los Mejores Destinos del Mundo
@@ -224,7 +224,7 @@ const HomePageDorada = () => {
       <section className="py-16 px-6 bg-gradient-to-r from-amber-50 to-yellow-50">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl font-bold text-center text-amber-900 mb-12">
-            Por Qué Elegir Innovation Business
+            Por Qué Elegir Innovation Bussines
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -272,7 +272,7 @@ const HomePageDorada = () => {
             ¿Listo para tu Próxima Aventura?
           </h2>
           <p className="text-xl text-amber-100 mb-8">
-            Planifica tu viaje ideal con Innovation Business hoy mismo
+            Planifica tu viaje ideal con Innovation Bussines hoy mismo
           </p>
           <button className="px-8 py-4 bg-yellow-300 text-amber-900 font-bold text-lg rounded-lg hover:bg-yellow-400 transition shadow-lg">
             Reservar Ahora

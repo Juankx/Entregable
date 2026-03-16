@@ -155,7 +155,15 @@ const adjuntoController = {
         });
       }
 
-      res.setHeader('Content-Type', 'application/pdf');
+      // Tipo MIME según extensión del archivo (PDF, JSON, etc.)
+      const ext = (adjunto.nombre_original || '').toLowerCase().split('.').pop();
+      const mimeTypes = {
+        pdf: 'application/pdf',
+        json: 'application/json'
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+      res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', `attachment; filename="${adjunto.nombre_original}"`);
       res.setHeader('Content-Length', adjunto.tamaño);
 
@@ -215,7 +223,7 @@ const adjuntoController = {
   },
 
   /**
-   * Crear adjunto desde una plantilla (generar PDF automáticamente)
+   * Crear adjunto desde una plantilla (intenta PDF con Puppeteer; si falla, guarda JSON)
    */
   async crearAdjuntoDesdeePlantilla(req, res) {
     let browser;
@@ -230,79 +238,93 @@ const adjuntoController = {
         });
       }
 
-      console.log(`📋 Generando PDF desde plantilla ${plantillaId} para contrato ${contratoId}`);
-
-      // Generar HTML desde la plantilla
-      const html = generarHTMLDesdeePlantilla(plantillaId, plantillaContent);
-
-      // Generar PDF con Puppeteer
-      const puppeteer = require('puppeteer');
-      browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm'
-        }
-      });
-
-      await browser.close();
-
-      // Crear directorio si no existe
       const contratoDir = path.join(uploadsDir, `contrato-${contratoId}`);
       if (!fs.existsSync(contratoDir)) {
         fs.mkdirSync(contratoDir, { recursive: true });
       }
 
-      // Guardar archiv
       const timestamp = Date.now();
       const random = Math.floor(Math.random() * 10000);
-      const nombreGuardado = `${timestamp}-${random}.pdf`;
-      const rutaCompleta = path.join(contratoDir, nombreGuardado);
 
-      fs.writeFileSync(rutaCompleta, pdfBuffer);
+      const guardarComoJson = (buffer, ext = '.json') => {
+        const nombreGuardado = `${timestamp}-${random}-${plantillaId}${ext}`;
+        const rutaCompleta = path.join(contratoDir, nombreGuardado);
+        fs.writeFileSync(rutaCompleta, buffer);
+        return { nombreGuardado, rutaCompleta, buffer };
+      };
 
-      // Guardar en base de datos
-      const adjunto = await AdjuntoContrato.create({
-        contrato_id: contratoId,
-        nombre_original: `${plantillaId}.pdf`,
-        nombre_guardado: nombreGuardado,
-        ruta: `/uploads/contrato-${contratoId}/${nombreGuardado}`,
-        tamaño: pdfBuffer.length,
-        tipo_documento: mapearTipoPlantilla(plantillaId),
-        usuario_id: req.user?.id || null,
-        fecha_subida: new Date()
-      });
+      try {
+        console.log(`📋 Generando PDF desde plantilla ${plantillaId} para contrato ${contratoId}`);
+        const html = generarHTMLDesdeePlantilla(plantillaId, plantillaContent);
+        const puppeteer = require('puppeteer');
+        browser = await puppeteer.launch({
+          headless: 'new',
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+        });
+        if (browser) await browser.close();
+        browser = null;
 
-      console.log(`✅ Adjunto creado desde plantilla: ${adjunto.nombre_original}`);
+        const nombreGuardado = `${timestamp}-${random}.pdf`;
+        const rutaCompleta = path.join(contratoDir, nombreGuardado);
+        fs.writeFileSync(rutaCompleta, pdfBuffer);
 
-      res.json({
-        success: true,
-        message: 'Plantilla convertida a PDF y añadida como adjunto',
-        adjunto: {
-          id: adjunto.id,
-          nombre_original: adjunto.nombre_original,
-          ruta: adjunto.ruta,
-          tamaño: adjunto.tamaño
+        const adjunto = await AdjuntoContrato.create({
+          contrato_id: contratoId,
+          nombre_original: `${plantillaId}.pdf`,
+          nombre_guardado: nombreGuardado,
+          ruta: `/uploads/contrato-${contratoId}/${nombreGuardado}`,
+          tamaño: pdfBuffer.length,
+          tipo_documento: mapearTipoPlantilla(plantillaId),
+          usuario_id: req.user?.id || null,
+          fecha_subida: new Date()
+        });
+        console.log(`✅ Adjunto PDF creado desde plantilla: ${adjunto.nombre_original}`);
+        return res.json({
+          success: true,
+          message: 'Plantilla convertida a PDF y añadida como adjunto',
+          adjunto: { id: adjunto.id, nombre_original: adjunto.nombre_original, ruta: adjunto.ruta, tamaño: adjunto.tamaño }
+        });
+      } catch (puppeteerError) {
+        if (browser) try { await browser.close(); } catch (_) {}
+        const msg = (puppeteerError && (puppeteerError.message || String(puppeteerError))) || '';
+        const esChromeNoDisponible = /launch|libatk|shared object|Code: 127|ENOENT|browser process/i.test(msg);
+        if (esChromeNoDisponible) {
+          console.warn(`⚠️ Puppeteer/Chrome no disponible en el servidor, guardando plantilla como JSON: ${msg.slice(0, 80)}`);
+          const jsonBuffer = Buffer.from(JSON.stringify(plantillaContent, null, 2), 'utf8');
+          const { nombreGuardado, buffer } = guardarComoJson(jsonBuffer);
+          const adjunto = await AdjuntoContrato.create({
+            contrato_id: contratoId,
+            nombre_original: `${plantillaId}.json`,
+            nombre_guardado: nombreGuardado,
+            ruta: `/uploads/contrato-${contratoId}/${nombreGuardado}`,
+            tamaño: buffer.length,
+            tipo_documento: mapearTipoPlantilla(plantillaId),
+            usuario_id: req.user?.id || null,
+            fecha_subida: new Date()
+          });
+          console.log(`✅ Adjunto guardado como JSON (sin PDF): ${adjunto.nombre_original}`);
+          return res.json({
+            success: true,
+            message: 'Chrome no disponible en el servidor. Plantilla guardada como JSON. Puedes descargarla y convertir a PDF localmente si lo necesitas.',
+            adjunto: { id: adjunto.id, nombre_original: adjunto.nombre_original, ruta: adjunto.ruta, tamaño: adjunto.tamaño }
+          });
         }
-      });
+        throw puppeteerError;
+      }
     } catch (error) {
       console.error('❌ Error al crear adjunto desde plantilla:', error);
-      if (browser) await browser.close();
+      if (browser) try { await browser.close(); } catch (_) {}
       res.status(500).json({
         success: false,
-        message: 'Error al generar PDF desde plantilla',
-        error: error.message
+        message: 'Error al generar adjunto desde plantilla',
+        error: error && (error.message || String(error))
       });
     }
   }

@@ -167,11 +167,11 @@ const respuestaGeneralista = (pregunta) => {
   const p = pregunta.toLowerCase();
   
   if (p.includes('horario') || p.includes('atienden')) {
-    return 'Nuestro horario es:\n\n⏰ Lunes a Viernes: 9:00 AM - 6:00 PM\n⏰ Sábado: 9:00 AM - 2:00 PM\n\n📱 WhatsApp 24/7: +593 99 922 2210';
+    return 'Nuestro horario es:\n\n⏰ Lunes a Viernes: 9:00 AM - 6:00 PM\n⏰ Sábado: 9:00 AM - 2:00 PM\n\n📱 WhatsApp 24/7: +593 98 147 3845';
   }
   
   if (p.includes('ubicación') || p.includes('dirección') || p.includes('dónde están')) {
-    return 'Nos ubicamos en:\n\n📍 Calle Principal 123, Quito - Ecuador\n\n📱 WhatsApp: +593 99 922 2210\n📧 Email: info@innovationbusiness.com';
+    return 'Nos ubicamos en:\n\n📍 Calle Principal 123, Quito - Ecuador\n\n📱 WhatsApp: +593 98 147 3845\n📧 Email: info@innovationbusiness.com';
   }
   
   if (p.includes('empresa') || p.includes('quién es') || p.includes('nosotros')) {
@@ -244,7 +244,7 @@ exports.responderPregunta = async (req, res) => {
 
     // Respuesta por defecto amigable
     res.json({
-      respuesta: '😊 Entiendo tu pregunta. Aunque no tengo una respuesta específica preparada, nuestro equipo puede ayudarte mejor.\n\n📱 Contáctanos por:\n• WhatsApp: +593 99 922 2210 (respuesta rápida)\n• Email: info@innovationbusiness.com\n• O llama durante nuestro horario: Lunes-Viernes 9AM-6PM\n\n¿Hay algo más en lo que pueda ayudarte?',
+      respuesta: '😊 Entiendo tu pregunta. Aunque no tengo una respuesta específica preparada, nuestro equipo puede ayudarte mejor.\n\n📱 Contáctanos por:\n• WhatsApp: +593 98 147 3845 (respuesta rápida)\n• Email: info@innovationbusiness.com\n• O llama durante nuestro horario: Lunes-Viernes 9AM-6PM\n\n¿Hay algo más en lo que pueda ayudarte?',
       confianza: 50
     });
   } catch (error) {

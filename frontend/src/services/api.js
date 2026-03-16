@@ -300,6 +300,27 @@ const getOfflineResponse = (config) => {
     return { status: 200, data: { success: true } };
   }
 
+  // Bitácora Postventa
+  if (url === '/postventa-vitacora' && method === 'get') {
+    return { status: 200, data: { success: true, data: [] } };
+  }
+  if (url === '/postventa-vitacora/plantilla-72h' && method === 'get') {
+    return {
+      status: 200,
+      data: {
+        success: true,
+        plantilla: 'Le informamos que su caso ha sido recibido. Se le contestará en un plazo de 72 horas hábiles.\n\nLa persona que analizará su caso es: Postventa.\n\nQuedamos atentos.',
+        asignado_a: 'Postventa'
+      }
+    };
+  }
+  if (url === '/postventa-vitacora' && method === 'post') {
+    return { status: 201, data: { success: true, data: { id: 'mock1', estado: 'pendiente' } } };
+  }
+  if (url.startsWith('/postventa-vitacora/') && method === 'patch') {
+    return { status: 200, data: { success: true, data: {} } };
+  }
+
   // Usuarios
   if (url === '/users' && method === 'get') {
     return { status: 200, data: { users: [] } };
@@ -1120,6 +1141,14 @@ export const reportService = {
     const response = await api.get(`/reports/dashboard?period=${period}`);
     return response.data;
   }
+};
+
+export const postventaVitacoraService = {
+  list: () => api.get('/postventa-vitacora').then((r) => r.data),
+  create: (body) => api.post('/postventa-vitacora', body).then((r) => r.data),
+  update: (id, body) => api.patch(`/postventa-vitacora/${id}`, body).then((r) => r.data),
+  getPlantilla72h: (asignado) =>
+    api.get('/postventa-vitacora/plantilla-72h', { params: asignado ? { asignado_a: asignado } : {} }).then((r) => r.data)
 };
 
 export default api;

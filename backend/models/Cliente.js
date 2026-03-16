@@ -65,7 +65,7 @@ class Cliente {
       'datafast', 'tipo_tarjeta', 'forma_pago', 'tiempo_meses', 'pagare', 'fecha_pagare',
       'monto_pagare', 'pagare_cuotas', 'pagare_cuotas_asumidas', 'pagare_valor_cuota',
       'pagare_total', 'linner', 'closer', 'empresa', 'telefono', 'direccion', 'ciudad', 'pais',
-      'usuario_asignado_id', 'notas'
+      'usuario_asignado_id', 'notas', 'sala'
     ];
 
     // Mapear city/country/notes a ciudad/pais/notas

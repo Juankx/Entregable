@@ -7,7 +7,7 @@ const packages = [
   { id: 7, name: "Galápagos - Santa Cruz", image: "/images/paquetes/GalapagosSantaCruz.jpeg", price: "Desde $1,499" },
 ]
 
-const SolicitarReservaList = ({ whatsappNumber = '0984707978' }) => {
+const SolicitarReservaList = ({ whatsappNumber = '593981473845' }) => {
   const openWhatsApp = (packageName) => {
     const message = `quiero mas informacion hacerca de este paquete: ${packageName}`
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank')

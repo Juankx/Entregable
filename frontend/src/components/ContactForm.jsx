@@ -75,7 +75,7 @@ const ContactForm = () => {
     }
     
     // Prepare WhatsApp message
-    const message = `*Nueva Solicitud de Cotización - Innovation Business*
+    const message = `*Nueva Solicitud de Cotización - Innovation Bussines*
 
 *Información del Cliente:*
 • Nombre: ${formData.nombre}
@@ -94,7 +94,7 @@ Hola! Me gustaría recibir una cotización personalizada para este viaje. ¿Podr
 ¡Gracias!`
     
     // Open WhatsApp with pre-filled message
-    const whatsappUrl = `https://wa.me/0999845693?text=${encodeURIComponent(message)}`
+    const whatsappUrl = `https://wa.me/593981473845?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
     
     // Reset form
@@ -141,7 +141,7 @@ Hola! Me gustaría recibir una cotización personalizada para este viaje. ¿Podr
                   </div>
                   <div>
                     <h4 className="font-semibold text-amber-200">Teléfono</h4>
-                    <p className="text-amber-100">0999845693</p>
+                    <p className="text-amber-100">+593 98 147 3845</p>
                     <p className="text-sm text-amber-300">WhatsApp disponible 24/7</p>
                   </div>
                 </div>

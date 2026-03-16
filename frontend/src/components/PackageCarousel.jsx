@@ -88,7 +88,7 @@ const PackageCarousel = () => {
 
   const openWhatsApp = (packageName) => {
     const message = `Hola! Me interesa el paquete "${packageName}". ¿Podrían darme más información?`
-    window.open(`https://wa.me/593999222210?text=${encodeURIComponent(message)}`, '_blank')
+    window.open(`https://wa.me/593981473845?text=${encodeURIComponent(message)}`, '_blank')
   }
 
   return (

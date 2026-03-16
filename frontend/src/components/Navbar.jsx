@@ -51,7 +51,7 @@ const Navbar = () => {
             {/* Logo */}
             <Link to="/" className="flex-shrink-0 flex items-center gap-2">
               <div className="text-2xl font-bold text-yellow-300 hover:text-yellow-200 transition">
-                🌟 Innovation Business
+                🌟 Innovation Bussines
               </div>
             </Link>
 
@@ -176,7 +176,7 @@ const Navbar = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-8">
             <h2 className="text-2xl font-bold text-amber-900 mb-2">Iniciar Sesión</h2>
-            <p className="text-gray-600 text-sm mb-6">Acceso de Prueba - Innovation Business</p>
+            <p className="text-gray-600 text-sm mb-6">Acceso de Prueba - Innovation Bussines</p>
 
             {error && (
               <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">

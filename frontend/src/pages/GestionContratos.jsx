@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { descargarAutorizacionComoPdf } from '../utils/autorizacionJsonToPdf';
+import { generarPdfDesdePlantilla, generarPdfComoBlob, generarPdfDesdeHtml } from '../utils/plantillasToPdf';
+import { contratoPrestacionServiciosToHtml } from '../utils/contratoPrestacionServiciosToHtml';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function GestionContratos() {
   const { user, logout } = useAuth();
@@ -17,6 +20,8 @@ export default function GestionContratos() {
   const [plantillasDisponibles, setPlantillasDisponibles] = useState([]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState('');
   const [anexosSeleccionados, setAnexosSeleccionados] = useState([]);
+  const [generandoDoc, setGenerandoDoc] = useState(false);
+  const [plantillaIdParaDoc, setPlantillaIdParaDoc] = useState('');
   
   // Plantilla de contrato
   const [plantilla, setPlantilla] = useState({
@@ -36,7 +41,7 @@ export default function GestionContratos() {
     autorizacion: {
       empresa: {
         razon_social: 'PACIFIC ADVENTURE PACITURE S.A.S',
-        nombre_comercial: 'INNOVATION BUSINESS',
+        nombre_comercial: 'INNOVATION BUSSINES',
         ruc: '1793230574001'
       },
       valor: {
@@ -240,7 +245,8 @@ export default function GestionContratos() {
       cargarEstadisticas();
     } catch (error) {
       console.error('Error al crear contrato:', error);
-      alert('Error: ' + (error.response?.data?.message || error.message));
+      const detalle = error.response?.data?.error || error.response?.data?.message || error.message;
+      alert('Error al crear contrato:\n\n' + detalle);
     }
   };
 
@@ -302,16 +308,52 @@ export default function GestionContratos() {
     }
   };
 
-  const descargarPDF = (adjuntoId, nombreOriginal) => {
-    const token = getAuthToken();
-    const url = `${API_URL}/adjuntos/descargar/${adjuntoId}?token=${token}`;
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = nombreOriginal;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const descargarPDF = async (adjuntoId, nombreOriginal) => {
+    const esAutorizacionJson = nombreOriginal && /\.json$/i.test(nombreOriginal) && /autorizacion|autorización|cobro/i.test(nombreOriginal);
+
+    try {
+      const token = getAuthToken();
+      const response = await axios.get(`${API_URL}/adjuntos/descargar/${adjuntoId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      const blob = response.data;
+
+      if (esAutorizacionJson) {
+        const text = await blob.text();
+        let jsonData;
+        try {
+          jsonData = JSON.parse(text);
+        } catch (_) {
+          alert('El archivo no es un JSON válido de autorización.');
+          return;
+        }
+        const nombrePdf = (nombreOriginal || 'autorizacion-cobro').replace(/\.json$/i, '.pdf');
+        await descargarAutorizacionComoPdf(jsonData, nombrePdf);
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nombreOriginal || `adjunto-${adjuntoId}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const json = JSON.parse(text);
+          alert(json.message || 'Error al descargar');
+        } catch (_) {
+          alert('Error al descargar el archivo');
+        }
+      } else {
+        alert(error.response?.data?.message || 'Error al descargar el adjunto');
+      }
+    }
   };
 
   const eliminarAdjunto = async (adjuntoId) => {
@@ -330,10 +372,113 @@ export default function GestionContratos() {
     }
   };
 
-  const verDocumento = (id) => {
+  const verDocumento = async (contratoId, clienteId = null) => {
     const token = getAuthToken();
-    const url = `${API_URL}/contratos/${id}/documento/pdf`;
-    window.open(url + `?token=${token}`, '_blank');
+    try {
+      let cid = clienteId;
+      if (cid == null) {
+        const cr = await axios.get(`${API_URL}/contratos/${contratoId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        cid = cr.data?.data?.cliente_id ?? cr.data?.cliente_id;
+      }
+      if (cid == null) throw new Error('No se pudo obtener el cliente del contrato');
+      const res = await axios.get(`${API_URL}/plantillas/contrato-servicios/rellenar`, {
+        params: { cliente_id: cid, contrato_id: contratoId },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = res.data?.data;
+      if (!data) throw new Error('Sin datos de plantilla');
+
+      // Para \"Ver Documento\" usamos solo el HTML específico del contrato,
+      // que ya sabemos que genera contenido estable.
+      const html = contratoPrestacionServiciosToHtml(data);
+      if (!html.trim()) throw new Error('No se pudo generar el documento');
+      const blob = await generarPdfDesdeHtml(html);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      const msg = e.response?.data?.message || e.message || 'Error al generar el documento';
+      alert('❌ ' + msg);
+    }
+  };
+
+  const obtenerDatosRellenados = async () => {
+    if (!contratoSeleccionado?.cliente_id || !plantillaIdParaDoc) return null;
+    const res = await axios.get(`${API_URL}/plantillas/${plantillaIdParaDoc}/rellenar`, {
+      params: {
+        cliente_id: contratoSeleccionado.cliente_id,
+        contrato_id: contratoSeleccionado.id
+      }
+    });
+    return res.data?.data ?? null;
+  };
+
+  const generarDocumentoDesdePlantilla = async () => {
+    if (!contratoSeleccionado?.cliente_id || !plantillaIdParaDoc) {
+      alert('Selecciona una plantilla');
+      return;
+    }
+    setGenerandoDoc(true);
+    try {
+      const data = await obtenerDatosRellenados();
+      if (!data) throw new Error('Sin datos');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contrato-${plantillaIdParaDoc}-${(contratoSeleccionado.numero_contrato || 'doc').replace(/\s+/g, '-')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      alert('✅ Documento generado y descargado');
+    } catch (e) {
+      alert('❌ Error: ' + (e.response?.data?.message || e.message));
+    } finally {
+      setGenerandoDoc(false);
+    }
+  };
+
+  const generarPdfDesdePlantillaHandler = async () => {
+    if (!contratoSeleccionado?.cliente_id || !plantillaIdParaDoc) {
+      alert('Selecciona una plantilla');
+      return;
+    }
+    setGenerandoDoc(true);
+    try {
+      const data = await obtenerDatosRellenados();
+      if (!data) throw new Error('Sin datos');
+      const base = `${plantillaIdParaDoc}-${(contratoSeleccionado.numero_contrato || 'doc').replace(/\s+/g, '-')}`;
+      await generarPdfDesdePlantilla(plantillaIdParaDoc, data, base);
+      alert('✅ PDF generado y descargado');
+    } catch (e) {
+      alert('❌ Error: ' + (e.response?.data?.message || e.message));
+    } finally {
+      setGenerandoDoc(false);
+    }
+  };
+
+  const guardarPdfComoAdjuntoHandler = async () => {
+    if (!contratoSeleccionado?.cliente_id || !plantillaIdParaDoc) {
+      alert('Selecciona una plantilla');
+      return;
+    }
+    setGenerandoDoc(true);
+    try {
+      const data = await obtenerDatosRellenados();
+      if (!data) throw new Error('Sin datos');
+      const blob = await generarPdfComoBlob(plantillaIdParaDoc, data);
+      const nombreArchivo = `${plantillaIdParaDoc}-${(contratoSeleccionado.numero_contrato || 'doc').replace(/\s+/g, '-')}.pdf`;
+      const file = new File([blob], nombreArchivo, { type: 'application/pdf' });
+      const tipoDoc = plantillaIdParaDoc === 'autorizacion-cobro-pacifico' ? 'autorizacion' : 'otro';
+      const descripcion = plantillasDisponibles.find((p) => p.id === plantillaIdParaDoc)?.nombre || plantillaIdParaDoc;
+      await subirPDF(contratoSeleccionado.id, file, `Generado desde plantilla: ${descripcion}`, tipoDoc);
+      await cargarAdjuntos(contratoSeleccionado.id);
+    } catch (e) {
+      alert('❌ Error: ' + (e.response?.data?.message || e.message));
+    } finally {
+      setGenerandoDoc(false);
+    }
   };
 
   const actualizarCampo = (seccion, campo, valor) => {
@@ -534,7 +679,7 @@ export default function GestionContratos() {
                           Ver
                         </button>
                         <button 
-                          onClick={() => verDocumento(contrato.id)}
+                          onClick={() => verDocumento(contrato.id, contrato.cliente_id)}
                           className="text-green-600 hover:text-green-900 mr-3"
                         >
                           📄 Documento
@@ -666,25 +811,33 @@ export default function GestionContratos() {
                 <input
                   type="number"
                   placeholder="Valor del contrato"
-                  value={plantilla.contrato.valor_contrato}
+                  value={Number.isFinite(Number(plantilla.contrato.valor_contrato)) ? plantilla.contrato.valor_contrato : ''}
                   onChange={(e) => {
-                    actualizarCampo('contrato', 'valor_contrato', parseFloat(e.target.value));
-                    actualizarCampoAnidado('autorizacion', 'valor', 'monto_numerico', parseFloat(e.target.value));
+                    const v = parseFloat(e.target.value);
+                    const num = Number.isFinite(v) ? v : 0;
+                    actualizarCampo('contrato', 'valor_contrato', num);
+                    actualizarCampoAnidado('autorizacion', 'valor', 'monto_numerico', num);
                   }}
                   className="border rounded px-3 py-2"
                 />
                 <input
                   type="number"
                   placeholder="Número de noches"
-                  value={plantilla.contrato.numero_noches}
-                  onChange={(e) => actualizarCampo('contrato', 'numero_noches', parseInt(e.target.value))}
+                  value={Number.isFinite(Number(plantilla.contrato.numero_noches)) ? plantilla.contrato.numero_noches : ''}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    actualizarCampo('contrato', 'numero_noches', Number.isFinite(v) ? v : 0);
+                  }}
                   className="border rounded px-3 py-2"
                 />
                 <input
                   type="number"
                   placeholder="Años de contrato"
-                  value={plantilla.contrato.anos_contrato}
-                  onChange={(e) => actualizarCampo('contrato', 'anos_contrato', parseInt(e.target.value))}
+                  value={Number.isFinite(Number(plantilla.contrato.anos_contrato)) ? plantilla.contrato.anos_contrato : ''}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    actualizarCampo('contrato', 'anos_contrato', Number.isFinite(v) ? v : 0);
+                  }}
                   className="border rounded px-3 py-2"
                 />
                 <input
@@ -815,8 +968,8 @@ export default function GestionContratos() {
             <h1 className="text-3xl font-bold">Detalle del Contrato</h1>
             <div className="flex gap-2">
               <button 
-                onClick={() => verDocumento(contratoSeleccionado.id)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+onClick={() => verDocumento(contratoSeleccionado.id, contratoSeleccionado.cliente_id)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 📄 Ver Documento
               </button>
@@ -829,7 +982,7 @@ export default function GestionContratos() {
             </div>
           </div>
 
-          {/* Datos Básicos */}
+          {/* Datos Básicos (resumen) */}
           <div className="bg-white p-6 rounded-lg shadow mb-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -856,6 +1009,154 @@ export default function GestionContratos() {
                 <p className="text-sm text-gray-600">Años</p>
                 <p className="text-lg">{contratoSeleccionado.anos_contrato}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Detalle total del contrato (registro completo para evitar reclamos) */}
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-bold mb-4 border-b pb-2">📋 Detalle total del contrato</h2>
+            <p className="text-sm text-gray-500 mb-4">Registro completo acordado con el cliente. Consulte este detalle ante cualquier discrepancia.</p>
+
+            <div className="space-y-5">
+              {/* Identificación y datos del contrato */}
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Identificación del contrato</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                  <div><span className="text-gray-500">Número:</span> <span className="font-medium">{contratoSeleccionado.numero_contrato}</span></div>
+                  <div><span className="text-gray-500">Fecha contrato:</span> <span className="font-medium">{contratoSeleccionado.fecha_contrato ? new Date(contratoSeleccionado.fecha_contrato).toLocaleDateString('es') : '—'}</span></div>
+                  <div><span className="text-gray-500">Valor:</span> <span className="font-medium">${parseFloat(contratoSeleccionado.valor_contrato || 0).toFixed(2)}</span></div>
+                  <div><span className="text-gray-500">Noches:</span> <span className="font-medium">{contratoSeleccionado.numero_noches ?? '—'}</span></div>
+                  <div><span className="text-gray-500">Años:</span> <span className="font-medium">{contratoSeleccionado.anos_contrato ?? '—'}</span></div>
+                  <div><span className="text-gray-500">Tarjeta / banco:</span> <span className="font-medium">{(contratoSeleccionado.datos_completos?.contrato?.tarjeta_y_banco) || contratoSeleccionado.tarjeta_y_banco || '—'}</span></div>
+                  {(contratoSeleccionado.pagare_numero || contratoSeleccionado.pagare_fecha_vencimiento) && (
+                    <>
+                      <div><span className="text-gray-500">Pagaré nº:</span> <span className="font-medium">{contratoSeleccionado.pagare_numero || '—'}</span></div>
+                      <div><span className="text-gray-500">Vencimiento pagaré:</span> <span className="font-medium">{contratoSeleccionado.pagare_fecha_vencimiento ? new Date(contratoSeleccionado.pagare_fecha_vencimiento).toLocaleDateString('es') : '—'}</span></div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Cliente */}
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Cliente</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                  <div><span className="text-gray-500">Nombre:</span> <span className="font-medium">{contratoSeleccionado.first_name} {contratoSeleccionado.last_name}</span></div>
+                  <div><span className="text-gray-500">Email:</span> <span className="font-medium">{contratoSeleccionado.email || '—'}</span></div>
+                  <div><span className="text-gray-500">Teléfono:</span> <span className="font-medium">{contratoSeleccionado.phone || '—'}</span></div>
+                  <div><span className="text-gray-500">Documento:</span> <span className="font-medium">{contratoSeleccionado.document_number || (contratoSeleccionado.datos_completos?.cliente?.cedula) || '—'}</span></div>
+                  <div><span className="text-gray-500">Ciudad:</span> <span className="font-medium">{contratoSeleccionado.ciudad || (contratoSeleccionado.datos_completos?.cliente?.ciudad) || '—'}</span></div>
+                  <div><span className="text-gray-500">País:</span> <span className="font-medium">{contratoSeleccionado.pais || (contratoSeleccionado.datos_completos?.cliente?.pais) || '—'}</span></div>
+                  {(contratoSeleccionado.direccion || contratoSeleccionado.datos_completos?.cliente?.direccion) && (
+                    <div className="col-span-2"><span className="text-gray-500">Dirección:</span> <span className="font-medium">{contratoSeleccionado.direccion || contratoSeleccionado.datos_completos?.cliente?.direccion}</span></div>
+                  )}
+                </div>
+              </div>
+
+              {/* Autorización de pago */}
+              {(contratoSeleccionado.datos_completos?.autorizacion || contratoSeleccionado.estado_pago || contratoSeleccionado.voucher_referencia) && (
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Autorización de cobro</h3>
+                  <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
+                    {(contratoSeleccionado.datos_completos?.autorizacion?.valor) && (
+                      <>
+                        <p><span className="text-gray-500">Monto (letras):</span> <span className="font-medium">{contratoSeleccionado.datos_completos.autorizacion.valor.monto_letras}</span></p>
+                        <p><span className="text-gray-500">Monto (numérico):</span> <span className="font-medium">${Number(contratoSeleccionado.datos_completos.autorizacion.valor.monto_numerico).toFixed(2)}</span></p>
+                      </>
+                    )}
+                    {(contratoSeleccionado.datos_completos?.autorizacion?.empresa) && (
+                      <p><span className="text-gray-500">Empresa:</span> <span className="font-medium">{contratoSeleccionado.datos_completos.autorizacion.empresa.razon_social} ({contratoSeleccionado.datos_completos.autorizacion.empresa.nombre_comercial}) — RUC: {contratoSeleccionado.datos_completos.autorizacion.empresa.ruc}</span></p>
+                    )}
+                    {(contratoSeleccionado.datos_completos?.autorizacion?.motivo) && (
+                      <p><span className="text-gray-500">Motivo:</span> <span className="font-medium">{contratoSeleccionado.datos_completos.autorizacion.motivo}</span></p>
+                    )}
+                    {(contratoSeleccionado.datos_completos?.autorizacion?.voucher) && (
+                      <p><span className="text-gray-500">Voucher:</span> Lote {contratoSeleccionado.datos_completos.autorizacion.voucher.lote || '—'}, Ref. {contratoSeleccionado.datos_completos.autorizacion.voucher.referencia || '—'}, Aprobación {contratoSeleccionado.datos_completos.autorizacion.voucher.aprobacion || '—'}</p>
+                    )}
+                    <p><span className="text-gray-500">Estado pago:</span> <span className="font-medium">{contratoSeleccionado.estado_pago || contratoSeleccionado.datos_completos?.metadata?.estado || '—'}</span></p>
+                    {contratoSeleccionado.voucher_referencia && <p><span className="text-gray-500">Referencia voucher:</span> <span className="font-medium">{contratoSeleccionado.voucher_referencia}</span></p>}
+                  </div>
+                </div>
+              )}
+
+              {/* Beneficios */}
+              {(contratoSeleccionado.cortesias_por_asistencia || contratoSeleccionado.ofrecimientos_adicionales || contratoSeleccionado.datos_completos?.beneficios) && (
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Beneficios acordados</h3>
+                  <div className="bg-gray-50 p-3 rounded text-sm space-y-2">
+                    <p><span className="text-gray-500">Cortesías por asistencia:</span> <span className="font-medium">{(contratoSeleccionado.datos_completos?.beneficios?.cortesias_por_asistencia) || contratoSeleccionado.cortesias_por_asistencia || '—'}</span></p>
+                    <p><span className="text-gray-500">Ofrecimientos adicionales:</span> <span className="font-medium">{(contratoSeleccionado.datos_completos?.beneficios?.ofrecimientos_adicionales) || contratoSeleccionado.ofrecimientos_adicionales || '—'}</span></p>
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata / auditoría */}
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Registro y estado</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                  <div><span className="text-gray-500">Estado contrato:</span> <span className="font-medium">{contratoSeleccionado.estado}</span></div>
+                  <div><span className="text-gray-500">Creado por:</span> <span className="font-medium">{contratoSeleccionado.creado_por || contratoSeleccionado.datos_completos?.metadata?.creado_por || '—'}</span></div>
+                  <div><span className="text-gray-500">Fecha creación:</span> <span className="font-medium">{contratoSeleccionado.fecha_creacion ? new Date(contratoSeleccionado.fecha_creacion).toLocaleString('es') : '—'}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Documento del contrato: descarga PDF */}
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-bold mb-4">📄 Documento del contrato</h2>
+            <p className="text-gray-600 mb-3 text-sm">Genera y descarga el PDF del contrato con los datos actuales.</p>
+            <button
+              type="button"
+              onClick={() => verDocumento(contratoSeleccionado.id, contratoSeleccionado.cliente_id)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              ⬇ Generar y descargar PDF
+            </button>
+          </div>
+
+          {/* Generar documento desde plantilla (PDF en frontend) */}
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-bold mb-4">📋 Generar documento desde plantilla</h2>
+            <p className="text-gray-600 mb-3 text-sm">Elige una plantilla, rellenada con los datos de este contrato y cliente, y descarga JSON o PDF.</p>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="min-w-[220px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Plantilla</label>
+                <select
+                  value={plantillaIdParaDoc}
+                  onChange={(e) => setPlantillaIdParaDoc(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+                >
+                  <option value="">— Seleccionar —</option>
+                  {plantillasDisponibles.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                disabled={!plantillaIdParaDoc || generandoDoc}
+                onClick={generarDocumentoDesdePlantilla}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generandoDoc ? '⏳...' : '📥 Descargar JSON'}
+              </button>
+              <button
+                type="button"
+                disabled={!plantillaIdParaDoc || generandoDoc}
+                onClick={generarPdfDesdePlantillaHandler}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generandoDoc ? '⏳...' : '⬇ Generar y descargar PDF'}
+              </button>
+              <button
+                type="button"
+                disabled={!plantillaIdParaDoc || generandoDoc}
+                onClick={guardarPdfComoAdjuntoHandler}
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generandoDoc ? '⏳...' : '📎 Generar PDF y guardar como adjunto'}
+              </button>
             </div>
           </div>
 
@@ -911,14 +1212,6 @@ export default function GestionContratos() {
             )}
           </div>
 
-          {contratoSeleccionado.datos_completos && (
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="font-bold mb-2">Datos Completos (JSON)</h3>
-              <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-96">
-                {JSON.stringify(contratoSeleccionado.datos_completos, null, 2)}
-              </pre>
-            </div>
-          )}
         </div>
       </div>
     );

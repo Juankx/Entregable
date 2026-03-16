@@ -157,7 +157,7 @@ Las imágenes actuales son placeholders de Unsplash. Para personalizar:
 
 La landing page incluye integración completa con WhatsApp:
 
-- **Número**: +593 99 922 2210
+- **Número**: +593 98 147 3845
 - **Formulario**: Se envía directamente a WhatsApp con mensaje preformateado
 - **Botones CTA**: Todos abren WhatsApp con mensajes personalizados
 - **Mensajes**: Incluyen información del formulario y solicitud de cotización
@@ -186,9 +186,9 @@ La landing page incluye:
 Crea un archivo `.env` para configuraciones:
 
 ```env
-VITE_WHATSAPP_NUMBER=593999222210
+VITE_WHATSAPP_NUMBER=593981473845
 VITE_COMPANY_EMAIL=info@kemperytravel.com
-VITE_COMPANY_PHONE=+593 99 922 2210
+VITE_COMPANY_PHONE=+593 98 147 3845
 ```
 
 ### Redes Sociales
@@ -224,7 +224,7 @@ Actualiza los enlaces en `Footer.jsx`:
 Para soporte técnico o personalizaciones:
 
 - **Email**: info@kemperytravel.com
-- **WhatsApp**: +593 99 922 2210
+- **WhatsApp**: +593 98 147 3845
 
 ## 📄 Licencia
 

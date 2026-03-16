@@ -1,5 +1,21 @@
 const fs = require('fs');
 const path = require('path');
+const pool = require('../config/pg-pool');
+const { mergeIntoTemplate, buildDatosRelleno } = require('../utils/rellenarPlantilla');
+
+const PLANTILLAS_MAP = {
+  'contrato-basico': 'plantilla-contrato-ejemplo.json',
+  'autorizacion-cobro-pacifico': 'autorizacion-cobro-pacifico.json',
+  'carta-diferimiento': 'carta-diferimiento.json',
+  'consentimiento-grabacion': 'consentimiento-grabacion-imagenes.json',
+  'contrato-servicios': 'contrato-prestacion-servicios.json',
+  'pagare': 'pagare-credito.json',
+  'documento-entendimiento': 'documento-entendimiento-aceptacion.json',
+  'hoja-bienvenida': 'hoja-bienvenida.json',
+  'checklist-documentos': 'checklist-documentos-entregados.json',
+  'solicitud-activacion': 'solicitud-activacion-contrato.json',
+  'anexo-beneficios': 'anexo-beneficios-ventajas.json'
+};
 
 const plantillasController = {
   /**
@@ -102,22 +118,7 @@ const plantillasController = {
   obtenerPlantilla: (req, res) => {
     try {
       const { id } = req.params;
-
-      const plantillasMap = {
-        'contrato-basico': 'plantilla-contrato-ejemplo.json',
-        'autorizacion-cobro-pacifico': 'autorizacion-cobro-pacifico.json',
-        'carta-diferimiento': 'carta-diferimiento.json',
-        'consentimiento-grabacion': 'consentimiento-grabacion-imagenes.json',
-        'contrato-servicios': 'contrato-prestacion-servicios.json',
-        'pagare': 'pagare-credito.json',
-        'documento-entendimiento': 'documento-entendimiento-aceptacion.json',
-        'hoja-bienvenida': 'hoja-bienvenida.json',
-        'checklist-documentos': 'checklist-documentos-entregados.json',
-        'solicitud-activacion': 'solicitud-activacion-contrato.json',
-        'anexo-beneficios': 'anexo-beneficios-ventajas.json'
-      };
-
-      const archivo = plantillasMap[id];
+      const archivo = PLANTILLAS_MAP[id];
 
       if (!archivo) {
         return res.status(404).json({
@@ -150,6 +151,90 @@ const plantillasController = {
       res.status(500).json({
         success: false,
         message: 'Error al obtener plantilla',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * Obtener plantilla rellenada con datos de cliente y opcionalmente contrato.
+   * GET /api/plantillas/:id/rellenar?cliente_id=1&contrato_id=2 (contrato_id opcional)
+   */
+  rellenarPlantilla: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const clienteId = req.query.cliente_id;
+      const contratoId = req.query.contrato_id;
+
+      if (!clienteId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere cliente_id en la query'
+        });
+      }
+
+      const archivo = PLANTILLAS_MAP[id];
+      if (!archivo) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plantilla no encontrada'
+        });
+      }
+
+      const rutaArchivo = path.join(__dirname, '..', archivo);
+      if (!fs.existsSync(rutaArchivo)) {
+        return res.status(404).json({
+          success: false,
+          message: 'Archivo de plantilla no existe'
+        });
+      }
+
+      const clienteRes = await pool.query(
+        'SELECT * FROM clientes WHERE id = $1',
+        [clienteId]
+      );
+      if (!clienteRes.rows[0]) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+      const cliente = clienteRes.rows[0];
+
+      let contrato = null;
+      if (contratoId) {
+        const contratoRes = await pool.query(
+          'SELECT * FROM contratos_viajes WHERE id = $1 AND cliente_id = $2',
+          [contratoId, clienteId]
+        );
+        contrato = contratoRes.rows[0] || null;
+      } else {
+        const contratoRes = await pool.query(
+          'SELECT * FROM contratos_viajes WHERE cliente_id = $1 ORDER BY fecha_creacion DESC LIMIT 1',
+          [clienteId]
+        );
+        contrato = contratoRes.rows[0] || null;
+      }
+
+      const contenido = fs.readFileSync(rutaArchivo, 'utf-8');
+      const plantilla = JSON.parse(contenido);
+      const datos = buildDatosRelleno(cliente, contrato);
+      const plantillaRellena = mergeIntoTemplate(plantilla, datos);
+
+      console.log(`✅ Plantilla ${id} rellenada para cliente ${clienteId}`);
+
+      res.json({
+        success: true,
+        data: plantillaRellena,
+        id,
+        cliente_id: parseInt(clienteId, 10),
+        contrato_id: contrato ? contrato.id : null
+      });
+    } catch (error) {
+      console.error('❌ Error al rellenar plantilla:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al rellenar plantilla',
         error: error.message
       });
     }

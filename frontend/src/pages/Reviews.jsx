@@ -8,7 +8,7 @@ const Reviews = () => {
       name: 'María González',
       destination: 'Cartagena, Colombia',
       rating: 5,
-      text: 'Una experiencia extraordinaria. Innovation Business superó todas mis expectativas. El servicio fue impecable y los detalles fueron perfectos.',
+      text: 'Una experiencia extraordinaria. Innovation Bussines superó todas mis expectativas. El servicio fue impecable y los detalles fueron perfectos.',
       avatar: '👩',
       verified: true
     },
@@ -53,7 +53,7 @@ const Reviews = () => {
       name: 'Roberto Díaz',
       destination: 'Punta Cana',
       rating: 4,
-      text: 'Muy buena experiencia. El destino es perfecto y el equipo de Innovation Business fue muy profesional y atento.',
+      text: 'Muy buena experiencia. El destino es perfecto y el equipo de Innovation Bussines fue muy profesional y atento.',
       avatar: '👨',
       verified: true
     }
@@ -145,7 +145,7 @@ const Reviews = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">¿Ya viajaste con nosotros?</h2>
           <p className="text-xl text-amber-100 mb-8">
-            Comparte tu experiencia y ayuda a otros viajeros a descubrir Innovation Business
+            Comparte tu experiencia y ayuda a otros viajeros a descubrir Innovation Bussines
           </p>
         </div>
       </section>

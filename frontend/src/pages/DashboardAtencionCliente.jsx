@@ -580,7 +580,7 @@ export default function DashboardAtencionCliente() {
                   const client = (allClients || []).find((x) => String(x.id) === String(id))
                   if (client) {
                     setWelcomePhone((client.phone || client.telefono || client.telefono_movil || '').toString().replace(/\D/g, ''))
-                    if (!welcomeTemplate.trim()) setWelcomeTemplate(`¡Hola ${client.first_name} ${client.last_name}!\n\nBienvenido a Innovation Business. Tu contrato ${client.contract_number || ''} ha sido registrado correctamente.\n\nSi necesitas asistencia, responde a este mensaje.`)
+                    if (!welcomeTemplate.trim()) setWelcomeTemplate(`¡Hola ${client.first_name} ${client.last_name}!\n\nBienvenido a Innovation Bussines. Tu contrato ${client.contract_number || ''} ha sido registrado correctamente.\n\nSi necesitas asistencia, responde a este mensaje.`)
                   }
                 }}
               >
@@ -606,7 +606,7 @@ export default function DashboardAtencionCliente() {
                 onClick={() => {
                   const digits = (welcomePhone || '').toString().replace(/\D/g, '')
                   if (!digits) return alert('Ingresa un número de teléfono válido')
-                  const message = welcomeTemplate || '¡Hola! Bienvenido a Innovation Business.'
+                  const message = welcomeTemplate || '¡Hola! Bienvenido a Innovation Bussines.'
                   const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
                   window.open(url, '_blank')
                   setShowWelcomeModal(false)

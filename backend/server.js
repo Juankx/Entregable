@@ -10,7 +10,7 @@ const sequelize = require('./config/database');
 const Usuario = require('./models/Usuario');
 console.log('✅ Usuario model loaded');
 
-// Importar todos los modelos Sequelize
+// Importar todos los modelos Sequelize (la tabla clientes se crea con init-database.js / schema.sql)
 const Paquete = require('./models/Paquete');
 const ContratoFisico = require('./models/ContratoFisico');
 const Locacion = require('./models/Locacion');
@@ -29,8 +29,21 @@ console.log('✅ Sequelize models loaded');
 const app = express();
 
 // Middleware
+// CORS: con credentials: true no se puede usar '*'; hay que listar orígenes permitidos
+const allowedOrigins = [
+  'https://innovationbussines.com',
+  'https://www.innovationbussines.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
 app.use(cors({
-  origin: '*', // Permitir todos los orígenes en desarrollo
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // peticiones sin Origin (Postman, etc.)
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    callback(null, true); // permitir otros en desarrollo; en producción quita esta línea y usa: callback(new Error('CORS no permitido'))
+  },
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -66,6 +79,7 @@ const reservationAgendaRoutes = require('./routes/reservation-agenda');
 const visaAgendaRoutes = require('./routes/visa-agenda');
 const flightAgendaRoutes = require('./routes/flight-agenda');
 const clientTransfersRoutes = require('./routes/client-transfers');
+const postventaVitacoraRoutes = require('./routes/postventa-vitacora');
 const contratoRoutes = require('./routes/contratoRoutes');
 const reportesRoutes = require('./routes/reportes');
 const beneficiosRoutes = require('./routes/beneficios');
@@ -112,6 +126,7 @@ app.use('/api/reservation-agenda', reservationAgendaRoutes);
 app.use('/api/visa-agenda', visaAgendaRoutes);
 app.use('/api/flight-agenda', flightAgendaRoutes);
 app.use('/api/client-transfers', clientTransfersRoutes);
+app.use('/api/postventa-vitacora', postventaVitacoraRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -144,11 +159,21 @@ async function iniciar() {
         console.log('✅ Migración de contratos ejecutada');
       }
     } catch (migrationError) {
-      // Si la migración ya se ejecutó o hay un error, continuar
       console.log('⚠️ Migración de contratos:', migrationError.message.includes('already exists') ? 'Ya existe' : migrationError.message);
     }
+    try {
+      const salaPath = path.join(__dirname, 'database', 'migrations', 'add-sala-clientes.sql');
+      if (fs.existsSync(salaPath)) {
+        const salaSQL = fs.readFileSync(salaPath, 'utf8');
+        await sequelize.query(salaSQL);
+        console.log('✅ Migración sala (clientes) ejecutada');
+      }
+    } catch (salaErr) {
+      console.log('⚠️ Migración sala:', salaErr.message.includes('already exists') ? 'Ya existe' : salaErr.message);
+    }
 
-    // Sincronizar Sequelize con la base de datos (sin recrear tablas)
+    // Sincronizar Sequelize (la tabla clientes debe existir ya; créala con: node init-database.js)
+    await Usuario.sync({ alter: false });
     await sequelize.sync({ alter: false });
     console.log('✅ Sequelize sincronizado con la base de datos');
 

@@ -3,7 +3,7 @@ import QRCode from 'qrcode'
 
 const WhatsAppQR = () => {
   const canvasRef = useRef(null)
-  const whatsappNumber = '593999222210'
+  const whatsappNumber = '593981473845'
   const whatsappMessage = '¡Hola! Me gustaría obtener información sobre sus paquetes turísticos.'
   const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
 

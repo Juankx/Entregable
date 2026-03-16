@@ -8,16 +8,17 @@ CREATE TABLE IF NOT EXISTS paquetes (
   fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
--- Tabla de departamentos
-CREATE TABLE IF NOT EXISTS departamentos (
-  id SERIAL PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
-  locacionId INTEGER NOT NULL REFERENCES locaciones(id) ON DELETE CASCADE
-);
+-- Tabla de locaciones (debe existir antes que departamentos)
 CREATE TABLE IF NOT EXISTS locaciones (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   direccion VARCHAR(255)
+);
+-- Tabla de departamentos (depende de locaciones)
+CREATE TABLE IF NOT EXISTS departamentos (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  locacionId INTEGER NOT NULL REFERENCES locaciones(id) ON DELETE CASCADE
 );
 -- CRM Database Schema
 -- PostgreSQL
@@ -100,6 +101,7 @@ CREATE TABLE clientes (
   -- Gestión interna
   usuario_asignado_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
   notas TEXT,
+  sala VARCHAR(50) DEFAULT 'Sala 1',
   
   -- Timestamps
   fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

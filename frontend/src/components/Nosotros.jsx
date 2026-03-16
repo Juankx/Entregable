@@ -126,7 +126,7 @@ const Nosotros = () => {
               cómo podemos hacer realidad tus sueños de viaje.
             </p>
             <button 
-              onClick={() => window.open('https://wa.me/593999222210?text=Hola! Me gustaría conocer más sobre sus servicios de viaje.', '_blank')}
+              onClick={() => window.open('https://wa.me/593981473845?text=Hola! Me gustaría conocer más sobre sus servicios de viaje.', '_blank')}
               className="bg-white text-navy font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition-all duration-300"
             >
               Contáctanos Ahora

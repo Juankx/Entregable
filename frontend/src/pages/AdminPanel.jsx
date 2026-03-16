@@ -29,7 +29,9 @@ import {
   DollarSign,
   CalendarCheck,
   Wallet,
-  MapPin
+  MapPin,
+  Percent,
+  Calculator
 } from 'lucide-react'
 import { clientService, bookingService, userService, requirementService, paymentService, paymentAgreementService, documentService, reservationAgendaService, visaAgendaService, flightAgendaService } from '../services/api'
 import reportService from '../services/reportService'
@@ -454,12 +456,19 @@ const AdminPanel = ({ initialSection, panelTitle = 'Admin Panel' }) => {
   const [flightAgendaSearch, setFlightAgendaSearch] = useState('')
   const [flightAgendaStatusFilter, setFlightAgendaStatusFilter] = useState('')
 
+  // Calculadora de comisiones
+  const [comisionVenta, setComisionVenta] = useState('')
+  const [comisionDescuentoSaldo, setComisionDescuentoSaldo] = useState('')
+  const [comisionSaldoFavor, setComisionSaldoFavor] = useState('')
+  const [comisionPorcentaje, setComisionPorcentaje] = useState('10')
+
   // Definir secciones disponibles según el usuario
   const getAvailableSections = () => {
     const allSections = [
       { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
       { id: 'clientes', name: 'Clientes', icon: Users },
       { id: 'cobranzas', name: 'Cobranzas', icon: DollarSign },
+      { id: 'comisiones', name: 'Comisiones', icon: Percent },
       { id: 'reservas', name: 'Reservas', icon: Calendar },
       { id: 'paquetes', name: 'Paquetes', icon: Plane },
       { id: 'locaciones', name: 'Locaciones / Departamentos', icon: MapPin },
@@ -7511,6 +7520,128 @@ const AdminPanel = ({ initialSection, panelTitle = 'Admin Panel' }) => {
           </div>
         )
 
+      case 'comisiones':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Calculator size={28} />
+              Cálculo de comisiones
+            </h2>
+            <p className="text-gray-600">
+              Ingresa el monto de la venta y los descuentos. La base y la comisión se calculan automáticamente al escribir.
+            </p>
+
+            <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Monto de la venta ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={comisionVenta}
+                    onChange={(e) => setComisionVenta(e.target.value)}
+                    placeholder="Ej: 3000"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Descuento de saldo ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={comisionDescuentoSaldo}
+                    onChange={(e) => setComisionDescuentoSaldo(e.target.value)}
+                    placeholder="Ej: 600"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Se resta de la venta para obtener la base de comisión.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Saldo a favor ($) — opcional</label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={comisionSaldoFavor}
+                      onChange={(e) => setComisionSaldoFavor(e.target.value)}
+                      placeholder="0"
+                      className="flex-1 min-w-[120px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy"
+                    />
+                    <label className="flex items-center gap-1.5 text-sm text-gray-600 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={comisionSaldoFavor === comisionDescuentoSaldo && parseFloat(comisionDescuentoSaldo) > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) setComisionSaldoFavor(comisionDescuentoSaldo);
+                          else setComisionSaldoFavor('');
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      Usar igual que descuento de saldo
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Si aplica; se suma a la base. Los resultados se actualizan al instante.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje de comisión (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={comisionPorcentaje}
+                    onChange={(e) => setComisionPorcentaje(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                {(() => {
+                  const venta = parseFloat(comisionVenta) || 0
+                  const descuento = parseFloat(comisionDescuentoSaldo) || 0
+                  const saldoFavor = parseFloat(comisionSaldoFavor) || 0
+                  const pct = parseFloat(comisionPorcentaje) || 0
+                  const base = Math.max(0, venta - descuento + saldoFavor)
+                  const comision = base * (pct / 100)
+                  return (
+                    <div className="space-y-3 text-gray-800">
+                      <p className="text-xs text-gray-500 mb-2">Cálculo automático:</p>
+                      <div className="flex justify-between">
+                        <span>Venta:</span>
+                        <span className="font-medium">${venta.toFixed(2)}</span>
+                      </div>
+                      {descuento > 0 && (
+                        <div className="flex justify-between text-gray-600">
+                          <span>Menos descuento de saldo:</span>
+                          <span>- ${descuento.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {saldoFavor > 0 && (
+                        <div className="flex justify-between text-gray-600">
+                          <span>Más saldo a favor:</span>
+                          <span>+ ${saldoFavor.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-semibold text-navy border-t pt-2">
+                        <span>Base para comisión:</span>
+                        <span>${base.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold text-green-700 bg-green-50 p-3 rounded-lg">
+                        <span>Comisión ({pct}%):</span>
+                        <span>${comision.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+            </div>
+          </div>
+        )
+
       default:
         return null
     }
@@ -8290,18 +8421,8 @@ const AdminPanel = ({ initialSection, panelTitle = 'Admin Panel' }) => {
                 </div>
               )}
 
-              {/* Puntos IB (calculado) y Sala - debajo de Total de la venta */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">PUNTOS IB</label>
-                  <input
-                    type="number"
-                    value={newClientData.puntos_ib ?? 0}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Calculado según total de venta (500-1000→50, 1001-3000→100, 3001-5000→200, 5001+→300)</p>
-                </div>
+              {/* Sala - debajo de Total de la venta */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">SALA</label>
                   <select
@@ -8313,7 +8434,6 @@ const AdminPanel = ({ initialSection, panelTitle = 'Admin Panel' }) => {
                     <option value="Sala 2">Sala 2</option>
                   </select>
                 </div>
-                <div />
               </div>
 
               {/* Quinta fila - Forma de pago y tiempo */}
@@ -9239,7 +9359,7 @@ const AdminPanel = ({ initialSection, panelTitle = 'Admin Panel' }) => {
                       <div className="text-sm text-gray-600 space-y-1">
                         <p><span className="font-medium">Wi-Fi:</span> {bookingFormData.wifi_name || 'No especificado'}</p>
                         <p><span className="font-medium">Contraseña:</span> {bookingFormData.wifi_password || 'No especificada'}</p>
-                        <p><span className="font-medium">Contacto:</span> +593 99 922 2210</p>
+                        <p><span className="font-medium">Contacto:</span> +593 98 147 3845</p>
                         {bookingFormData.google_maps_link && (
                           <p><span className="font-medium">Ubicación Google Maps:</span> <a href={bookingFormData.google_maps_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Ver ubicación</a></p>
                         )}
@@ -9323,7 +9443,7 @@ ${bookingFormData.google_maps_link ? `• Ubicación: ${bookingFormData.google_m
 • Procedimientos de check-out
 
 📞 *Contacto de Emergencia:*
-+593 99 922 2210
++593 98 147 3845
 
 ¡Esperamos que tenga una excelente estadía!
 

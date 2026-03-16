@@ -9,7 +9,7 @@ const TestimonialsPremium = () => {
       id: 1,
       name: 'María García',
       role: 'Ejecutiva de Ventas',
-      text: 'Innovation Business transformó mi forma de viajar. Los paquetes son increíbles y el servicio es excelente. ¡Ya boqueé mis próximas 3 vacaciones!',
+      text: 'Innovation Bussines transformó mi forma de viajar. Los paquetes son increíbles y el servicio es excelente. ¡Ya boqueé mis próximas 3 vacaciones!',
       rating: 5,
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
       destination: 'Cartagena, Colombia'
@@ -18,7 +18,7 @@ const TestimonialsPremium = () => {
       id: 2,
       name: 'Juan Rodríguez',
       role: 'Abogado',
-      text: 'Después de muchos años viajando con otras agencias, encontré en Innovation Business la calidad y personalización que buscaba. Los destinos exclusivos son una joya.',
+      text: 'Después de muchos años viajando con otras agencias, encontré en Innovation Bussines la calidad y personalización que buscaba. Los destinos exclusivos son una joya.',
       rating: 5,
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
       destination: 'Galápagos, Ecuador'
@@ -27,7 +27,7 @@ const TestimonialsPremium = () => {
       id: 3,
       name: 'Sofía López',
       role: 'Empresaria',
-      text: 'El mejor viaje que he hecho fue con Innovation Business. Todo estaba perfectamente organizado, desde el transporte hasta los hoteles. Atención de primer nivel.',
+      text: 'El mejor viaje que he hecho fue con Innovation Bussines. Todo estaba perfectamente organizado, desde el transporte hasta los hoteles. Atención de primer nivel.',
       rating: 5,
       image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
       destination: 'Punta Cana, R.D.'
@@ -36,7 +36,7 @@ const TestimonialsPremium = () => {
       id: 4,
       name: 'Carlos Mendez',
       role: 'Ingeniero',
-      text: 'Viajé con mi familia completa. Innovation Business se encargó de cada detalle. Los precios eran competitivos y la calidad superó todas mis expectativas.',
+      text: 'Viajé con mi familia completa. Innovation Bussines se encargó de cada detalle. Los precios eran competitivos y la calidad superó todas mis expectativas.',
       rating: 5,
       image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
       destination: 'Bogotá Clásico'
@@ -62,7 +62,7 @@ const TestimonialsPremium = () => {
             ✨ Lo Que Dicen Nuestros Viajeros
           </h2>
           <p className="text-lg !text-black max-w-3xl mx-auto font-semibold" style={{ color: '#000000' }}>
-            Experiencias reales de clientes que ya han transformado sus viajes con Innovation Business
+            Experiencias reales de clientes que ya han transformado sus viajes con Innovation Bussines
           </p>
         </div>
 

@@ -172,7 +172,7 @@ const Experiencias = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a 
-                href="https://wa.me/593999222210?text=Hola! Me gustaría obtener información sobre sus paquetes turísticos."
+                href="https://wa.me/593981473845?text=Hola! Me gustaría obtener información sobre sus paquetes turísticos."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 transform hover:scale-105"

@@ -376,7 +376,7 @@ const ClientePanel = () => {
               </p>
               <div className="flex justify-center mt-6">
                 <a
-                  href="https://wa.me/0984707978?text=¡Hola! Me gustaría obtener información sobre los paquetes turísticos de Innovation Business."
+                  href="https://wa.me/593981473845?text=¡Hola! Me gustaría obtener información sobre los paquetes turísticos de Innovation Bussines."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg shadow transition-all text-lg"
