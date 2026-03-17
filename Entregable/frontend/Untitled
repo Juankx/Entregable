@@ -1,0 +1,8 @@
+# API del backend
+VITE_API_URL=https://api.innovationbussines.com/api
+
+# false = usar backend real; true = modo offline (mocks)
+VITE_OFFLINE_MODE=false
+
+# Entorno
+NODE_ENV=development
